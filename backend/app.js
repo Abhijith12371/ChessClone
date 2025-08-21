@@ -40,11 +40,11 @@ io.on("connection", (socket) => {
         socket.emit("playerRole", "white")
     } else if (gameState.players.black === socket.id) {
         socket.emit("playerRole", "black")
-    } else {
-        socket.emit("playerRole", "spectator")
-    }
+    } 
 
     console.log("connected ✅", gameState.players)
+
+    io.emit("players",gameState.players)
 
     // Listen for moves
     socket.on("state", (data) => {
@@ -56,8 +56,6 @@ io.on("connection", (socket) => {
         gameState.fen=data
         socket.broadcast.emit('moveMade',gameState.fen)
     })
-
-
     // Cleanup on disconnect
     socket.on("disconnect", () => {
         console.log("disconnected ❌", socket.id)

@@ -7,7 +7,8 @@ export default function App() {
   const socket = useMemo(() => io("http://localhost:3000"), []);
   const [game, setGame] = useState(new Chess())
   const [fen, setFen] = useState(game.fen());
-  const [role, setRole] = useState("spectator")
+  const [role, setRole] = useState("")
+  const [players, setPlayers] = useState()
 
 
 
@@ -17,9 +18,9 @@ export default function App() {
     const target = data.targetSquare
     if ((game.turn() === "w" && role !== "white") ||
       (game.turn() === "b" && role !== "black")) {
-      return false;  
+      return false;
     }
-     game.move({
+    game.move({
       from: source,
       to: target,
       promotion: "q"
@@ -60,16 +61,26 @@ export default function App() {
     socket.on("playerRole", (assignedRole) => {
       setRole(assignedRole)
     })
+
+
     return () => {
       socket.off("state");
       socket.off("moveMade");
       socket.off("playerRole");
     };
   }, [socket])
+
+  useEffect(() => {
+    socket.on("players", (data) => {
+      console.log(data)
+      setPlayers(data)
+    })
+  }, [players,socket])
   return (
 
     <div className="w-[400px] h-[400px] mx-auto my-5 border border-gray-300 rounded-lg overflow-hidden shadow-md">
-      <Chessboard options={chessboardConfig} />
+      {players?.white && players?.black ?
+        <Chessboard options={chessboardConfig} /> : "searchinng"}
     </div>
-  );
+  )
 }
