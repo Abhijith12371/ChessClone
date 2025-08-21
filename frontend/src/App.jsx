@@ -9,22 +9,29 @@ export default function App() {
   const [fen, setFen] = useState(game.fen());
   const [role, setRole] = useState("spectator")
 
+
+
+  //piece move funion
   const Drop = (data) => {
     const source = data.sourceSquare
     const target = data.targetSquare
     if ((game.turn() === "w" && role !== "white") ||
       (game.turn() === "b" && role !== "black")) {
-      return false;  // ❌ not your turn
+      return false;  
     }
-    const move = game.move({
+     game.move({
       from: source,
       to: target,
       promotion: "q"
     })
-    setGame(game)
-    setFen(game.fen())
+    const newFen = game.fen()
+    setGame(new Chess(newFen))
+    setFen(newFen)
+    socket.emit("move", newFen)
     return true
   }
+
+  // chessBoardOptions
   const chessboardConfig = {
     position: fen,
     boardOrientation: role === "black" ? "black" : "white",
@@ -37,17 +44,28 @@ export default function App() {
     customLightSquareStyle: { backgroundColor: "#eeeed2" }
   };
 
+
+  // boardUpdateonEachSocketRender
   useEffect(() => {
-    socket.emit("fen", fen)
-    socket.on("fenUpdated", (updatedFen) => {
-      const updatedGame = new Chess(updatedFen)
+    socket.on("state", (gameState) => {
+      const updatedGame = new Chess(gameState.fen)
+      setGame(updatedGame)
+      setFen(updatedGame.fen())
+    })
+    socket.on("moveMade", (updatedmove) => {
+      const updatedGame = new Chess(updatedmove)
       setGame(updatedGame)
       setFen(updatedGame.fen())
     })
     socket.on("playerRole", (assignedRole) => {
       setRole(assignedRole)
     })
-  }, [fen])
+    return () => {
+      socket.off("state");
+      socket.off("moveMade");
+      socket.off("playerRole");
+    };
+  }, [socket])
   return (
 
     <div className="w-[400px] h-[400px] mx-auto my-5 border border-gray-300 rounded-lg overflow-hidden shadow-md">
